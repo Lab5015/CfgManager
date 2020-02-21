@@ -1,46 +1,107 @@
-CXX = g++
-CXXFLAGS = -std=c++1y -fPIC
-SOFLAGS = -shared -O3
-INCLUDE = -I"./" 
-LIB = -L"./lib/"
-libdir = /usr/lib/root/
+DIR := ${CURDIR}
 
-ROOT_LIB := `root-config --libs --glibs`
-ROOT_FLAGS := `root-config --cflags --ldflags`
+HDR = ./interface/
+SRC = ./src/
+PLG = ./plugins/
+PRG = ./test/
+OBJ = ./obj/
+LIB = ./lib/
+BIN = ./bin/
 
-DEPS = 	interface/CfgManager.h interface/CfgManagerT.h Makefile
+HDRSuf = .h
+SRCSuf = .cc
+PRGSuf = .cpp
+OBJSuf = .o
+LIBSuf = .so
+BINSuf = .exe
 
-DEPS_OBJS = lib/CfgManager.o
+HDRS    =  $(wildcard $(HDR)*$(HDRSuf))
+SRCS    =  $(wildcard $(SRC)*$(SRCSuf))
+PLGS    =  $(wildcard $(PLG)*$(HDRSuf))
+_OBJS   =  $(patsubst %$(SRCSuf), %$(OBJSuf), $(SRCS))
+OBJS    =  $(patsubst $(SRC)%, $(OBJ)%, $(_OBJS))
+PRGS    =  $(wildcard $(PRG)*$(PRGSuf))
+_BINS   =  $(wildcard $(PRG)*$(PRGSuf))
+__BINS  =  $(_BINS:$(PRGSuf)=$(BINSuf))
+___BINS =  $(notdir $(__BINS))
+BINS    =  $(addprefix $(BIN),${___BINS})
 
-all: $(DEPS_OBJS) lib/libCFGMan.cxx lib/libCFGMan.so bin/test
+LINKDEF   =  $(wildcard ${HDR}*LinkDef.h)
+DICTHDRS  =  $(patsubst $(LINKDEF),,$(HDRS)) $(LINKDEF)
 
-lib/%.o: src/%.cc $(DEPS)
-	@echo " CXX $<"	
-	@$ $(CXX) $(CXXFLAGS) -c -o $@ $< $(INCLUDE) $(ROOT_FLAGS)
 
-lib/libCFGMan.cxx: interface/CfgManager.h interface/CfgManagerT.h interface/LinkDef.h 
-	@$ rootcling -f $@ -rml libCFGMan.so -rmf lib/libCFGMan.rootmap $^
-	@$ rootcling -f $@ -rml libCFGMan.so -rmf lib/libCFGMan.rootmap $^
+ARCH  =  $(shell root-config --arch)
 
-lib/libCFGMan.so: lib/libCFGMan.cxx lib/CfgManager.o $(DEPS_OBJS)
-	@echo " CXX $<"
-	@$ $(CXX) $(CXXFLAGS) $(SOFLAGS) -shared -o $@ $^ $(INCLUDE) $(ROOT_LIB) $(ROOT_FLAGS) $(LIB)
+ROOTCFLAGS    = $(shell root-config --cflags)
+ROOTGLIBS     = $(shell root-config --glibs) -lGenVector -lFoam -lMinuit -lTMVA -lMLP -lXMLIO  -lTreePlayer
 
-bin/%: test/%.cpp lib/libCFGMan.so 
-	@echo " CXX $<"
-	@$ $(CXX) $(CXXFLAGS) -o $@ $^ $(INCLUDE) $(ROOT_LIB) $(ROOT_FLAGS) $(LIB)
 
-install:
-	cp lib/libCFGMan.so $(libdir)
-	cp lib/libCFGMan_rdict.pcm $(libdir)
-	cp lib/libCFGMan.rootmap $(libdir)
 
-uninstall:
-	rm $(libdir)/libCFGMan.so
-	rm $(libdir)/libCFGMan_rdict.pcm
-	rm $(libdir)/libCFGMan.rootmap
+CXX  =  g++
+CXXFLAGS  = -Wall -O2 -fPIC -I$(DIR) $(ROOTCFLAGS) 
+
+CPP  =  g++
+CPPFLAGS  = -Wall -I$(DIR) $(ROOTCFLAGS)
+
+LD       =  g++
+LDFLAGS  =  -rdynamic -shared -O2
+SONAME	 =  libCfgManager.so
+SOFLAGS  =  -Wl,-soname,
+
+GLIBS   =  -lm -ldl -rdynamic $(ROOTGLIBS)
+
+
+
+#################################################
+#if mac 64
+ifeq ($(ARCH),macosx64)
+LIBSuf  =  .dylib
+
+CPPFLAGS  =  -Wall -W -Woverloaded-virtual -O2 -pipe -I$(DIR) $(ROOTCFLAGS)
+
+CXXFLAGS  =  -Wall -W -Woverloaded-virtual -O2 -pipe -I$(DIR) $(ROOTCFLAGS)
+
+LDFLAGS  =  -dynamiclib -shared -single_module -undefined dynamic_lookup
+SONAME	 =  libCfgManager.dylib
+SOFLAGS  =  -Wl,-install_name,
+endif
+#################################################
+
+
+
+.PHONY: all clean test
+
+
+all: $(LIB)$(SONAME)
+
+exe: $(BINS)
+
+test:
+	@echo "HDRS = $(HDRS)"
+	@echo "DICTHDRS = $(DICTHDRS)"
+	@echo "SRCS = $(SRCS)"
+	@echo "PLGS = $(PLGS)"
+	@echo "PRGS = $(PRGS)"
+	@echo "OBJS = $(OBJS)"
+	@echo "BINS = $(BINS)"
+
+$(BIN)%$(BINSuf): $(PRG)%$(PRGSuf) $(HDRS) $(LIB)$(SONAME)
+	$(CPP) $(CPPFLAGS) $(GLIBS) -L$(LIB) -lCfgManager -o $@ $<
+
+$(OBJ)%$(OBJSuf): $(SRC)%$(SRCSuf)
+	$(CXX) -c $(CXXFLAGS) -o $@ $< 
+
+$(LIB)mydict.cc: $(DICTHDRS)
+	@echo "Generating dictionary..."
+	rootcling -f $(LIB)mydict.cc -c -p ${CXXFLAGS} $(DICTHDRS)
+
+$(LIB)mydict.o: $(LIB)mydict.cc 
+	$(CXX) -c $(CXXFLAGS) -o $@ $<
+
+$(LIB)$(SONAME): $(OBJS) $(LIB)mydict.o
+	@echo "Linking $(SONAME):"
+	$(LD) $(LDFLAGS) $(OBJS) $(LIB)mydict.o -o $(LIB)$(SONAME) $(SOFLAGS)$(SONAME)
 
 clean:
-	rm -fr tmp/*
-	rm -fr lib/*
-	rm -fr bin/*
+	@echo "cleaning..."
+	rm -f $(OBJ)*$(OBJSuf) $(LIB)*$(LIBSuf) $(LIB)mydict* $(BIN)*$(BINSuf)
