@@ -68,27 +68,27 @@ bool CfgManager::OptExist(std::string key, int opt) const
 //----------Replace $option[n] with the corresponding value-------------------------------
 bool CfgManager::ReplaceOptions(std::string& line)
 {
-    bool replaced=false; 
-    std::regex option_pattern("\\$\\w+(\\.[\\w+)*(\\[[0-9]+\\])?");
-    auto matches_begin = std::sregex_iterator(line.begin(), line.end(), option_pattern);
-    auto matches_end = std::sregex_iterator();
-    for(std::sregex_iterator it = matches_begin; it != matches_end; ++it)
-    {
-        auto opt_str = it->str();
-        auto brk_pos = opt_str.find("[");
-        int opt_idx = 0;
-        if(brk_pos != std::string::npos)
-            opt_idx = stoi(opt_str.substr(brk_pos+1, opt_str.size()-brk_pos-2));
-        else
-            brk_pos = opt_str.size()-1;
-        if(OptExist(opt_str.substr(1, brk_pos-1), opt_idx))
-        {
-            line.replace(line.find(opt_str), opt_str.size(), GetOpt<std::string>(opt_str.substr(1, brk_pos-1), opt_idx));
-            replaced = true;
-        }
-    }
+    // bool replaced=false; 
+    // std::regex option_pattern("\\$\\w+(\\.[\\w+)*(\\[[0-9]+\\])?");
+    // auto matches_begin = std::sregex_iterator(line.begin(), line.end(), option_pattern);
+    // auto matches_end = std::sregex_iterator();
+    // for(std::sregex_iterator it = matches_begin; it != matches_end; ++it)
+    // {
+    //     auto opt_str = it->str();
+    //     auto brk_pos = opt_str.find("[");
+    //     int opt_idx = 0;
+    //     if(brk_pos != std::string::npos)
+    //         opt_idx = stoi(opt_str.substr(brk_pos+1, opt_str.size()-brk_pos-2));
+    //     else
+    //         brk_pos = opt_str.size()-1;
+    //     if(OptExist(opt_str.substr(1, brk_pos-1), opt_idx))
+    //     {
+    //         line.replace(line.find(opt_str), opt_str.size(), GetOpt<std::string>(opt_str.substr(1, brk_pos-1), opt_idx));
+    //         replaced = true;
+    //     }
+    // }
 
-    return replaced;
+    // return replaced;
 }
 
 //----------Help method, parse single line------------------------------------------------
@@ -454,11 +454,11 @@ void CfgManager::Print(std::ostream& out, Option_t* option) const
     std::string argkey = option;
     //---banner
     std::string banner = "configuration was created by "+username_+" on "+timestamp_;
-    for(int i=0; i<banner.size(); ++i)
+    for(unsigned int i=0; i<banner.size(); ++i)
         out << "=";
     out << std::endl;
     out << banner << std::endl;
-    for(int i=0; i<banner.size(); ++i)
+    for(unsigned int i=0; i<banner.size(); ++i)
         out << "=";
     out << std::endl;
     

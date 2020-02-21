@@ -26,6 +26,38 @@ template<> inline std::string CfgManager::GetOpt(std::string key, int opt) const
     return opts_.at(key)[opt];
 }   
 
+template<> inline std::vector<int> CfgManager::GetOpt(std::string key, int opt) const
+{
+    key = "opts."+key;
+    Errors(key, opt);
+    std::vector<int> optsVect;
+    for(unsigned int iOpt=opt; iOpt<opts_.at(key).size(); ++iOpt)
+    {
+        int opt_val;
+        std::istringstream buffer(opts_.at(key)[iOpt]);
+        buffer >> opt_val;
+        optsVect.push_back(opt_val);
+    }
+    
+    return optsVect;
+}    
+
+template<> inline std::vector<unsigned int> CfgManager::GetOpt(std::string key, int opt) const
+{
+    key = "opts."+key;
+    Errors(key, opt);
+    std::vector<unsigned int> optsVect;
+    for(unsigned int iOpt=opt; iOpt<opts_.at(key).size(); ++iOpt)
+    {
+        unsigned int opt_val;
+        std::istringstream buffer(opts_.at(key)[iOpt]);
+        buffer >> opt_val;
+        optsVect.push_back(opt_val);
+    }
+    
+    return optsVect;
+}    
+
 template<> inline std::vector<float> CfgManager::GetOpt(std::string key, int opt) const
 {
     key = "opts."+key;
