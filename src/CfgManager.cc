@@ -89,6 +89,8 @@ bool CfgManager::ReplaceOptions(std::string& line)
     // }
 
     // return replaced;
+
+  return true;
 }
 
 //----------Help method, parse single line------------------------------------------------
@@ -557,7 +559,7 @@ void CfgManager::Errors(std::string key, int opt) const
         std::cout << "> CfgManager --- ERROR: key '"<< key.substr(5, key.size()) << "' not found" << std::endl;
         exit(-1);
     }
-    if(opt >= opts_.at(key).size())
+    if(opt >= int(opts_.at(key).size()))
     {
         std::cout << "> CfgManager --- ERROR: option '"<< key.substr(5, key.size()) << "' as less then "
              << opt << "values (" << opts_.at(key).size() << ")" << std::endl;
